@@ -1,0 +1,6 @@
+fastapi
+typing
+uvicorn
+requests
+loguru
+openai
