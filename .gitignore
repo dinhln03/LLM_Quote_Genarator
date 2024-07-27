@@ -1,0 +1,7 @@
+training/data/*
+training/logs/*
+quotes.csv
+training/merged_data
+.env
+training/gemma-2b
+training/scripts/unsloth/*

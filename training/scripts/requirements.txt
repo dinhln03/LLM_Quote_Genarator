@@ -1,0 +1,4 @@
+fire
+datasets
+google-generativeai
+loguru
