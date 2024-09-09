@@ -33,7 +33,9 @@ This project aims to generate synthetic data for translating English quotes into
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project. If you don't want to fine-tune the model, you can skip the <a href="#readme-top">training section</a> and go to the <a href="#readme-top">deployment section</a>
+This is an example of how you may give instructions on setting up your project. If you don't want to fine-tune the model, you can skip the <a href="#dg">data generation section</a> and <a href="#training">training section</a> and move ahead to the <a href="#readme-top">deployment section</a>. Checkout my data and model on the Huggingface hub as prequisites for the deployment phase.:
+- Dataset: [dinhlnd1610/Vietnamese_Quote_Dataset_100K](https://huggingface.co/datasets/dinhlnd1610/Vietnamese_Quote_Dataset_100K)
+- Model: [dinhlnd1610/gemma-2b-quote-generation-82000](https://huggingface.co/dinhlnd1610/gemma-2b-quote-generation-82000)
 
 ### Prerequisites
 
@@ -46,35 +48,99 @@ This is an example of how you may give instructions on setting up your project. 
    cd LLM_Quote_Genarator
    ```
 
+<a id="dg"></a>
 
+### I. Data Generation 
 
+In this phase, we will translate the English quote to Vietnamese using Gemini Pro and.
 
+1. Get your Gemini API key and save it in the `.env` file
+   ```sh
+   cd training/translate
+   set -a && source .env && set +a
+   ```
+2. Download English quote dataset and install the required packages
+   ```sh
+   gdown https://drive.google.com/uc?id=11MmVMc0khvB94W0zqDyUHowEEG650BSX
+   conda create -n training python=3.10 -y && conda activate training  && pip install -r requirements.txt
+   ```
+3. Run the Script to generate Vietnamese quotes. Data will be saved in `data` folder and log will be saved in `log` folder
+   ```bash
+   python run.py main \
+     --data_path=$data_path \
+     --sample_length=$sample_length \
+     --start_batch=$start_batch \
+     --end_batch=$end_batch \
+     --num_thread=$num_thread
+   ```
+   ```bash
+   # Example
+   python run.py main --data_path=./data.csv --sample_length=20000 --start_batch=0 --end_batch=4000 --num_thread=5
+   ```
+   | Parameter | Description |
+   |-----------|-------------|
+   | `$data_path` | Path to the downloaded English quote dataset |
+   | `$sample_length` | Number of quotes to translate |
+   | `$start_batch` | Starting batch number |
+   | `$end_batch` | Ending batch number |
+   | `$num_thread` | Number of threads to use |
 
+   **Key Notes:**
+   - You should choose `num_thread` such that `(end_batch - start_batch + 1)` is divisible by `num_thread`.
+    - Calculate `num_thread` using:
+      ```sh
+      num_thread = (end_batch - start_batch) // 5
+      ```
+4. Merge json data in folder `data` to a single json file
+   ```bash
+   python utils/merge_file.py 
+   ```
+5. Checkout the notebook to do some preprocessing data step such as: removing duplicate data point, remove toxic words,.. and push to huggingface hub. You can include more preprocessing steps such as removing more toxic words, filtering by perplexity,...
 
+<a id="training"></a>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### II. Fine-tuning Gemma-2b model
+1. Install the required packages
+   ```sh
+   cd training/training_scripts
+   sh run.sh
+   ```
+2. Download google/gemma-2b model on huggingface hub and write appropriate chat template for generating quotes
+   ```sh
+   cd utils
+   python training_utils.py download_model google/gemma-2b ../../gemma-2b
+   ```
+3. Fine-tune gemma-2b model on translated data produced in the previous step
+   ```bash
+   cd ..
+   ```
+   **If you have only 1 GPU**, just run
+   ```bash
+   export CUDA_VISIBLE_DEVICES=0
+   python training.py
+   ```
+   **If you have 1 node and multiple GPUs**, run Distributed Data Parallel
+   ```bash
+   export CUDA_VISIBLE_DEVICES=1,2,...
+   torchrun --standalone --nnodes=1 --nproc-per-node=$NUM_GPUs training.py
+   ```
+4. Login to Wandb to monitor the training process
+   ![alt text](images/wandb-training.png)
+   ![alt text](images/wandb-eval.png)
+5. Merge the lora model with the base model. 
+   ```bash
+   cd utils
+   python training_utils.py merge_model \
+      --base_model_path=$base_model_path \
+      --lora_path=$lora_model_path \
+      --output_path=$output_model_path
+   ```
+   | Parameter | Description |
+   |-----------|-------------|
+   | `$base_model_path` | Path to the orginal google/gemma2b model |
+   | `$lora_model_path` | Path to the fine-tuned lora adapter |
+   | `$output_model_path` | Path to save the merged model |
+6. Checkout the notebook to push the model to huggingface hub. 
 
 
 
