@@ -265,6 +265,7 @@ So far, we have deployed the model and the FastAPI app to GKE. Now, we need to m
       ```shell
       nohup kubectl port-forward -n observability svc/elk-eck-kibana-kb-http 5601:5601 > /dev/null 2>&1 &
       ```
+      
       Access Kibana at `http://localhost:5601`
       ![alt text](images/kibana-1.png)
 
@@ -277,10 +278,11 @@ So far, we have deployed the model and the FastAPI app to GKE. Now, we need to m
       ![alt text](images/kibana-2.png)
 
    - Grafana: 
-   ```shell
+      ```shell
       nohup kubectl port-forward -n observability svc/grafana 3000:3000 > /dev/null 2>&1 &
       ```
-      Access Kibana at `http://localhost:3000`
+
+      Access Grafana at `http://localhost:3000`
       ![alt text](images/graf-1.png)
 
       Login with `username: admin and password: admin` and check for metrics
