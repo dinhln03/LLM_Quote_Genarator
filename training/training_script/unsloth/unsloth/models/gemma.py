@@ -12,34 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .llama import *
-from ._utils import __version__
+from transformers.modeling_attn_mask_utils import \
+    _prepare_4d_causal_attention_mask_for_sdpa
+from transformers.models.gemma.modeling_gemma import (GemmaAttention,
+                                                      GemmaDecoderLayer,
+                                                      GemmaForCausalLM,
+                                                      GemmaModel,
+                                                      GemmaRotaryEmbedding,
+                                                      apply_rotary_pos_emb,
+                                                      repeat_kv)
 
-from transformers.models.gemma.modeling_gemma import (
-    GemmaAttention,
-    GemmaDecoderLayer,
-    GemmaModel,
-    GemmaForCausalLM,
-    GemmaRotaryEmbedding,
-    apply_rotary_pos_emb,
-    repeat_kv,
-)
-from transformers.modeling_attn_mask_utils import (
-    _prepare_4d_causal_attention_mask_for_sdpa,
-)
+from ._utils import __version__
+from .llama import *
+
 # For Pytorch 2.1.1
 try:
-    from transformers.models.gemma.modeling_gemma import (
-        GemmaSdpaAttention,
-        GemmaFlashAttention2,
-    )
+    from transformers.models.gemma.modeling_gemma import (GemmaFlashAttention2,
+                                                          GemmaSdpaAttention)
 except:
-    GemmaSdpaAttention   = GemmaAttention
+    GemmaSdpaAttention = GemmaAttention
     GemmaFlashAttention2 = GemmaAttention
 pass
 
 
 torch_nn_functional_gelu = torch.nn.functional.gelu
+
+
 def fast_geglu_inference(self, X):
     # gate = self.gate_proj(X)
     # up   = self.up_proj(X)
@@ -47,36 +45,45 @@ def fast_geglu_inference(self, X):
     # mlp_size = self.config.intermediate_size
     # temp = torch.empty((2, bsz, 1, mlp_size), dtype = X.dtype, device = "cuda")
 
-    gate = fast_linear_forward(self.gate_proj, X)#, out = temp[0])
-    up   = fast_linear_forward(self.  up_proj, X)#, out = temp[1])
-    gate = torch_nn_functional_gelu(gate, approximate = "tanh")
+    gate = fast_linear_forward(self.gate_proj, X)  # , out = temp[0])
+    up = fast_linear_forward(self.up_proj, X)  # , out = temp[1])
+    gate = torch_nn_functional_gelu(gate, approximate="tanh")
     gate *= up
 
     # X = self.down_proj(gate)
-    down = fast_linear_forward(self.down_proj, gate, out = up[:,:,:hd])
+    down = fast_linear_forward(self.down_proj, gate, out=up[:, :, :hd])
     return down
+
+
 pass
 
 
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py#L590
 def GemmaDecoderLayer_fast_forward(
     self,
-    hidden_states:        torch.Tensor,
-    causal_mask:          Optional[xformers.attn_bias.BlockDiagonalCausalMask] = None,
-    attention_mask:       Optional[torch.Tensor] = None,
-    position_ids:         Optional[torch.LongTensor] = None,
-    past_key_value:       Optional[Tuple[torch.Tensor]] = None,
-    output_attentions:    Optional[bool] = False,
-    use_cache:            Optional[bool] = False,
-    padding_mask:         Optional[torch.LongTensor] = None,
-    *args, **kwargs,
+    hidden_states: torch.Tensor,
+    causal_mask: Optional[xformers.attn_bias.BlockDiagonalCausalMask] = None,
+    attention_mask: Optional[torch.Tensor] = None,
+    position_ids: Optional[torch.LongTensor] = None,
+    past_key_value: Optional[Tuple[torch.Tensor]] = None,
+    output_attentions: Optional[bool] = False,
+    use_cache: Optional[bool] = False,
+    padding_mask: Optional[torch.LongTensor] = None,
+    *args,
+    **kwargs,
 ):
-    if use_cache and hasattr(self, "_flag_for_generation"): #past_key_value is not None:
-        out_weight = torch.empty(self.input_layernorm.weight.shape, dtype = torch.float32, device = "cuda")
+    if use_cache and hasattr(
+        self, "_flag_for_generation"
+    ):  # past_key_value is not None:
+        out_weight = torch.empty(
+            self.input_layernorm.weight.shape, dtype=torch.float32, device="cuda"
+        )
 
         # Self Attention
         residual = hidden_states
-        hidden_states = fast_rms_layernorm_inference_gemma(self.input_layernorm, hidden_states, out_weight)
+        hidden_states = fast_rms_layernorm_inference_gemma(
+            self.input_layernorm, hidden_states, out_weight
+        )
         hidden_states, self_attn_weights, present_key_value = self.self_attn(
             hidden_states=hidden_states,
             causal_mask=causal_mask,
@@ -91,12 +98,16 @@ def GemmaDecoderLayer_fast_forward(
 
         # Fully Connected
         residual = hidden_states
-        hidden_states = fast_rms_layernorm_inference_gemma(self.post_attention_layernorm, hidden_states, out_weight)
+        hidden_states = fast_rms_layernorm_inference_gemma(
+            self.post_attention_layernorm, hidden_states, out_weight
+        )
         hidden_states = fast_geglu_inference(self.mlp, hidden_states)
         hidden_states += residual
     else:
         residual = hidden_states
-        hidden_states = fast_rms_layernorm(self.input_layernorm, hidden_states, gemma = True)
+        hidden_states = fast_rms_layernorm(
+            self.input_layernorm, hidden_states, gemma=True
+        )
         hidden_states, self_attn_weights, present_key_value = self.self_attn(
             hidden_states=hidden_states,
             causal_mask=causal_mask,
@@ -111,19 +122,26 @@ def GemmaDecoderLayer_fast_forward(
 
         # Fully Connected
         residual = hidden_states
-        hidden_states = fast_rms_layernorm(self.post_attention_layernorm, hidden_states, gemma = True)
+        hidden_states = fast_rms_layernorm(
+            self.post_attention_layernorm, hidden_states, gemma=True
+        )
         hidden_states = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
     pass
 
     outputs = (hidden_states,)
-    if output_attentions: outputs += (self_attn_weights,)
-    if use_cache: outputs += (present_key_value,)
+    if output_attentions:
+        outputs += (self_attn_weights,)
+    if use_cache:
+        outputs += (present_key_value,)
     return outputs
+
+
 pass
 
 
 from math import sqrt as math_sqrt
+
 
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py#L825
 # @torch.inference_mode
@@ -132,15 +150,19 @@ def GemmaModel_fast_forward_inference(
     input_ids,
     past_key_values,
     position_ids,
-    attention_mask = None,
+    attention_mask=None,
 ):
-    out_weight = torch.empty_like(self.model.layers[0].input_layernorm.weight, dtype = torch.float32, device = "cuda")
-    input_ids = input_ids[:,:self.max_seq_length]
+    out_weight = torch.empty_like(
+        self.model.layers[0].input_layernorm.weight, dtype=torch.float32, device="cuda"
+    )
+    input_ids = input_ids[:, : self.max_seq_length]
     hidden_states = self.model.embed_tokens(input_ids)
     hidden_states = hidden_states.to(self.config.torch_dtype)
     # 3072**0.5 = 55.5000 in bfloat16, whilst 55.4256 in float32
     # 2048**0.5 = 45.2500 in bfloat16, whilst 45.2548 in float32
-    hidden_states *= torch.tensor(math_sqrt(self.config.hidden_size), dtype = hidden_states.dtype)
+    hidden_states *= torch.tensor(
+        math_sqrt(self.config.hidden_size), dtype=hidden_states.dtype
+    )
 
     bsz, q_len, hd = hidden_states.shape
     seq_len = past_key_values[0][0].shape[-2]
@@ -156,32 +178,40 @@ def GemmaModel_fast_forward_inference(
     next_decoder_cache = []
     for idx, decoder_layer in enumerate(self.model.layers):
         residual = hidden_states
-        hidden_states = fast_rms_layernorm_inference_gemma(decoder_layer.input_layernorm, hidden_states, out_weight)
+        hidden_states = fast_rms_layernorm_inference_gemma(
+            decoder_layer.input_layernorm, hidden_states, out_weight
+        )
         hidden_states, present_key_value = LlamaAttention_fast_forward_inference(
             decoder_layer.self_attn,
-            hidden_states = hidden_states,
-            past_key_value = past_key_values[idx],
-            position_ids = position_ids,
-            attention_mask = attention_mask,
-            do_prefill = not hasattr(decoder_layer.self_attn, "paged_attention"),
+            hidden_states=hidden_states,
+            past_key_value=past_key_values[idx],
+            position_ids=position_ids,
+            attention_mask=attention_mask,
+            do_prefill=not hasattr(decoder_layer.self_attn, "paged_attention"),
         )
         hidden_states += residual
 
         residual = hidden_states
-        hidden_states = fast_rms_layernorm_inference_gemma(decoder_layer.post_attention_layernorm, hidden_states, out_weight)
+        hidden_states = fast_rms_layernorm_inference_gemma(
+            decoder_layer.post_attention_layernorm, hidden_states, out_weight
+        )
         hidden_states = fast_geglu_inference(decoder_layer.mlp, hidden_states)
         hidden_states += residual
 
         next_decoder_cache.append(present_key_value)
     pass
-    hidden_states = fast_rms_layernorm_inference_gemma(self.model.norm, hidden_states, out_weight)
+    hidden_states = fast_rms_layernorm_inference_gemma(
+        self.model.norm, hidden_states, out_weight
+    )
 
     return BaseModelOutputWithPast(
-        last_hidden_state = hidden_states,
-        past_key_values = next_decoder_cache,
-        hidden_states = [],
-        attentions = [],
+        last_hidden_state=hidden_states,
+        past_key_values=next_decoder_cache,
+        hidden_states=[],
+        attentions=[],
     )
+
+
 pass
 
 
@@ -198,7 +228,12 @@ class GemmaFixedRotaryEmbedding(torch.nn.Module):
         self.base = base
 
         # Build here to make `torch.jit.trace` work.
-        self._set_cos_sin_cache(seq_len=max_position_embeddings, device=device, dtype=torch.get_default_dtype())
+        self._set_cos_sin_cache(
+            seq_len=max_position_embeddings,
+            device=device,
+            dtype=torch.get_default_dtype(),
+        )
+
     pass
 
     def _set_cos_sin_cache(self, seq_len, device, dtype):
@@ -208,19 +243,22 @@ class GemmaFixedRotaryEmbedding(torch.nn.Module):
 
         # The difference is we do division explicity instead of t * (1/x) ie we do t/x.
         freq_exponents = (2.0 / self.dim) * (
-            torch.arange(self.dim // 2, dtype = torch.int64, device = "cpu").float()
+            torch.arange(self.dim // 2, dtype=torch.int64, device="cpu").float()
         )
         timescale = self.base**freq_exponents
-        positions = torch.arange(self.max_seq_len_cached, device = "cpu", dtype = torch.int64).float()
+        positions = torch.arange(
+            self.max_seq_len_cached, device="cpu", dtype=torch.int64
+        ).float()
         radians_new = positions[..., None] / timescale[None, None, :]
         radians_new = radians_new.squeeze(0)
 
-        emb = torch.cat((radians_new, radians_new), dim = -1)
+        emb = torch.cat((radians_new, radians_new), dim=-1)
         # We must do RoPE in float32!
-        cos = emb.cos().to(device = device, non_blocking = True)#, dtype = dtype)
-        sin = emb.sin().to(device = device, non_blocking = True)#, dtype = dtype)
-        self.register_buffer("cos_cached", cos, persistent = False)
-        self.register_buffer("sin_cached", sin, persistent = False)
+        cos = emb.cos().to(device=device, non_blocking=True)  # , dtype = dtype)
+        sin = emb.sin().to(device=device, non_blocking=True)  # , dtype = dtype)
+        self.register_buffer("cos_cached", cos, persistent=False)
+        self.register_buffer("sin_cached", sin, persistent=False)
+
     pass
 
     def forward(self, x, position_ids=None, seq_len=None):
@@ -232,7 +270,10 @@ class GemmaFixedRotaryEmbedding(torch.nn.Module):
             self.cos_cached[:seq_len].to(dtype=x.dtype),
             self.sin_cached[:seq_len].to(dtype=x.dtype),
         )
+
     pass
+
+
 pass
 
 
@@ -240,12 +281,14 @@ class FastGemmaModel(FastLlamaModel):
 
     @staticmethod
     def pre_patch():
-        GemmaAttention      .forward = LlamaAttention_fast_forward
-        GemmaSdpaAttention  .forward = LlamaAttention_fast_forward
+        GemmaAttention.forward = LlamaAttention_fast_forward
+        GemmaSdpaAttention.forward = LlamaAttention_fast_forward
         GemmaFlashAttention2.forward = LlamaAttention_fast_forward
-        GemmaDecoderLayer   .forward = GemmaDecoderLayer_fast_forward
-        GemmaModel          .forward = LlamaModel_fast_forward
-        GemmaForCausalLM    .forward = CausalLM_fast_forward(GemmaModel_fast_forward_inference)
+        GemmaDecoderLayer.forward = GemmaDecoderLayer_fast_forward
+        GemmaModel.forward = LlamaModel_fast_forward
+        GemmaForCausalLM.forward = CausalLM_fast_forward(
+            GemmaModel_fast_forward_inference
+        )
         PeftModelForCausalLM.forward = PeftModelForCausalLM_fast_forward
         # Solves https://github.com/unslothai/unsloth/issues/168
         # Static KV Cache was introduced in 4.38.0, causing training to be much slower.
@@ -253,10 +296,13 @@ class FastGemmaModel(FastLlamaModel):
         # https://github.com/huggingface/transformers/pull/27931
         # https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/llama/modeling_llama.py
         import transformers.models.gemma.modeling_gemma
-        transformers.models.gemma.modeling_gemma.GemmaRotaryEmbedding = GemmaFixedRotaryEmbedding
-        return
-    pass
 
+        transformers.models.gemma.modeling_gemma.GemmaRotaryEmbedding = (
+            GemmaFixedRotaryEmbedding
+        )
+        return
+
+    pass
 
     @staticmethod
     def post_patch(model):
@@ -265,23 +311,28 @@ class FastGemmaModel(FastLlamaModel):
 
         # Torch.compile fails on embedding matrix??
         # Workaround randomnly fixes it for torch versions < 2.2
-        model.model.embed_tokens = torch.nn.Embedding.from_pretrained(model.model.embed_tokens.weight)
-        model.config.update({"unsloth_version" : __version__})
+        model.model.embed_tokens = torch.nn.Embedding.from_pretrained(
+            model.model.embed_tokens.weight
+        )
+        model.config.update({"unsloth_version": __version__})
 
         # We also do this for the lm_head
-        lm_head = torch.nn.Linear(1, 1, bias = None)
+        lm_head = torch.nn.Linear(1, 1, bias=None)
         del lm_head.weight
         lm_head.weight = model.lm_head.weight
-        lm_head.in_features  = lm_head.weight.shape[1]
+        lm_head.in_features = lm_head.weight.shape[1]
         lm_head.out_features = lm_head.weight.shape[0]
         model.lm_head = lm_head
 
         # Gemma has tied weights! This means lm_head == embed_tokens
-        if model.model.embed_tokens.weight.data_ptr() != model.lm_head.weight.data_ptr():
-            lm_head = torch.nn.Linear(1, 1, bias = None)
+        if (
+            model.model.embed_tokens.weight.data_ptr()
+            != model.lm_head.weight.data_ptr()
+        ):
+            lm_head = torch.nn.Linear(1, 1, bias=None)
             del lm_head.weight
             lm_head.weight = model.model.embed_tokens.weight
-            lm_head.in_features  = lm_head.weight.shape[1]
+            lm_head.in_features = lm_head.weight.shape[1]
             lm_head.out_features = lm_head.weight.shape[0]
             model.lm_head = lm_head
         pass
@@ -297,7 +348,9 @@ class FastGemmaModel(FastLlamaModel):
 
                 if type(quant_state) is list:
                     # BnB seems to have float16 as default!
-                    module.weight.quant_state[2] = correct_dtype # Cast to correct dtype
+                    module.weight.quant_state[2] = (
+                        correct_dtype  # Cast to correct dtype
+                    )
                 else:
                     # https://github.com/TimDettmers/bitsandbytes/pull/763/files
                     quant_state.dtype = correct_dtype
@@ -337,14 +390,20 @@ class FastGemmaModel(FastLlamaModel):
                 # Leave + 1 to Triton kernel itself
                 # module.weight += 1.0 # return output * (1 + self.weight)
                 if not hasattr(module, "variance_epsilon"):
-                    module.variance_epsilon = module.eps # Gemma doesn't use variance_epsilon
+                    module.variance_epsilon = (
+                        module.eps
+                    )  # Gemma doesn't use variance_epsilon
         pass
 
         # Clear deleted GPU items
         import gc
+
         for _ in range(3):
             gc.collect()
             torch.cuda.empty_cache()
         return model
+
     pass
+
+
 pass

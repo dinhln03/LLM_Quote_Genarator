@@ -1,0 +1,5 @@
+# Prometheus values
+prometheus:
+  image: prom/prometheus
+  containerPort: 9090
+  configPath: /etc/prometheus

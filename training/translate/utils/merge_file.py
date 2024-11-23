@@ -1,7 +1,11 @@
-from pathlib import Path
 import json
+from pathlib import Path
 
-def merge_file(input_path_dir = "../../data", output_path_dir = "../../merged_data/translated_quote.json"):
+
+def merge_file(
+    input_path_dir="../../data",
+    output_path_dir="../../merged_data/translated_quote.json",
+):
 
     result = []
 
@@ -16,7 +20,7 @@ def merge_file(input_path_dir = "../../data", output_path_dir = "../../merged_da
                 data = json.load(f)
 
                 result.extend(data)
-    
+
     with open(output_path_dir, "w") as f:
 
         json.dump(result, f, indent=2)

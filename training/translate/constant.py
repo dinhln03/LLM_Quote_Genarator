@@ -1,34 +1,35 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Constant:
     safe = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_NONE",
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_NONE",
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_NONE",
-            },
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_NONE",
-            },
-        ]
-    
+        {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "threshold": "BLOCK_NONE",
+        },
+        {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "threshold": "BLOCK_NONE",
+        },
+        {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "threshold": "BLOCK_NONE",
+        },
+        {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "threshold": "BLOCK_NONE",
+        },
+    ]
+
     topic = [
-            "Life and Inspiration: (Includes broader themes of life lessons, inspiration, courage, and personal growth.)",
-            "Love and Relationships (Covers themes like love, romance, heartbreak, marriage, and relationships.)",
-            "Friendship: (Covers themes like friend, companionship, loyalty, trust, mutual support, and shared experiences.))",
-            "Spirituality and Faith: (Includes themes of faith, hope, spiritual growth, and introspection.)",
-            "Humor and Light-heartedness: (Covers themes of humor, wit, light-hearted moments, and laughter.)",
-        ]
-    
+        "Life and Inspiration: (Includes broader themes of life lessons, inspiration, courage, and personal growth.)",
+        "Love and Relationships (Covers themes like love, romance, heartbreak, marriage, and relationships.)",
+        "Friendship: (Covers themes like friend, companionship, loyalty, trust, mutual support, and shared experiences.))",
+        "Spirituality and Faith: (Includes themes of faith, hope, spiritual growth, and introspection.)",
+        "Humor and Light-heartedness: (Covers themes of humor, wit, light-hearted moments, and laughter.)",
+    ]
+
     prompt_template = """
 You are a language model capable of translating quotes from English to Vietnamese that are meaningful and inspirational.
 

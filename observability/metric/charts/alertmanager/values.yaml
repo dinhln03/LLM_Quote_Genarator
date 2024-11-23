@@ -1,0 +1,3 @@
+alertmanager:
+  image: prom/alertmanager:v0.25.0
+  containerPort: 9093

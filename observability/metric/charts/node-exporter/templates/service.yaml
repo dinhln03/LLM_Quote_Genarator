@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-exporter
+spec:
+  selector:
+    app: node-exporter
+  ports:
+    - protocol: TCP
+      port: {{ .Values.node_exporter.containerPort }}
+      targetPort: {{ .Values.node_exporter.containerPort }}
+  type: ClusterIP

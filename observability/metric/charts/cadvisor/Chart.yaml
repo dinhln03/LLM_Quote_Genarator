@@ -1,0 +1,5 @@
+apiVersion: v2
+name: cadvisor
+description: Cadvisor subchart
+version: 0.1.0
+appVersion: "latest"

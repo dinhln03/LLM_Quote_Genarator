@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+data:
+  config.yml: |-
+    route:
+      repeat_interval: 15s # Time interval between consecutive notifications for the same alert
+      group_interval: 15s # Time interval between consecutive notifications for the same group of alerts
+      receiver: discord
+    receivers:
+    - name: discord
+      discord_configs:
+      - webhook_url: https://discordapp.com/api/webhooks/1302285119868108861/sd_ByyFoczXx-xl7SLC5x5cmkiGVhCbQczsACnW0TQ6i2fk8k960SxUxBjGbj6yCQcMB

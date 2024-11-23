@@ -12,25 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
+from transformers.models.qwen2.modeling_qwen2 import (Qwen2Attention,
+                                                      Qwen2DecoderLayer,
+                                                      Qwen2ForCausalLM,
+                                                      Qwen2Model)
+
+from ._utils import __version__
 from .llama import *
 from .mistral import FastMistralModel
-import os
-from ._utils import __version__
 
-from transformers.models.qwen2.modeling_qwen2 import (
-    Qwen2Attention,
-    Qwen2DecoderLayer,
-    Qwen2Model,
-    Qwen2ForCausalLM,
-)
 # For Pytorch 2.1.1
 try:
-    from transformers.models.qwen2.modeling_qwen2 import (
-        Qwen2SdpaAttention,
-        Qwen2FlashAttention2,
-    )
+    from transformers.models.qwen2.modeling_qwen2 import (Qwen2FlashAttention2,
+                                                          Qwen2SdpaAttention)
 except:
-    Qwen2SdpaAttention   = Qwen2Attention
+    Qwen2SdpaAttention = Qwen2Attention
     Qwen2FlashAttention2 = Qwen2Attention
 pass
 
@@ -39,12 +37,14 @@ class FastQwen2Model(FastLlamaModel):
 
     @staticmethod
     def pre_patch():
-        Qwen2Attention      .forward = LlamaAttention_fast_forward
-        Qwen2SdpaAttention  .forward = LlamaAttention_fast_forward
+        Qwen2Attention.forward = LlamaAttention_fast_forward
+        Qwen2SdpaAttention.forward = LlamaAttention_fast_forward
         Qwen2FlashAttention2.forward = LlamaAttention_fast_forward
-        Qwen2DecoderLayer   .forward = LlamaDecoderLayer_fast_forward
-        Qwen2Model          .forward = LlamaModel_fast_forward
-        Qwen2ForCausalLM    .forward = CausalLM_fast_forward(LlamaModel_fast_forward_inference)
+        Qwen2DecoderLayer.forward = LlamaDecoderLayer_fast_forward
+        Qwen2Model.forward = LlamaModel_fast_forward
+        Qwen2ForCausalLM.forward = CausalLM_fast_forward(
+            LlamaModel_fast_forward_inference
+        )
         PeftModelForCausalLM.forward = PeftModelForCausalLM_fast_forward
 
         # Solves https://github.com/unslothai/unsloth/issues/168
@@ -53,39 +53,45 @@ class FastQwen2Model(FastLlamaModel):
         # https://github.com/huggingface/transformers/pull/27931
         # https://github.com/huggingface/transformers/blob/v4.37.2/src/transformers/models/llama/modeling_llama.py
         import transformers.models.qwen2.modeling_qwen2
-        transformers.models.qwen2.modeling_qwen2.Qwen2RotaryEmbedding = LlamaRotaryEmbedding
-        return
-    pass
 
+        transformers.models.qwen2.modeling_qwen2.Qwen2RotaryEmbedding = (
+            LlamaRotaryEmbedding
+        )
+        return
+
+    pass
 
     @staticmethod
     def from_pretrained(
-        model_name     = "Qwen/Qwen1.5-7B",
-        max_seq_length = 4096,
-        dtype          = None,
-        load_in_4bit   = True,
-        token          = None,
-        device_map     = "sequential",
-        rope_scaling   = None, # Qwen2 does not support RoPE scaling
-        fix_tokenizer  = True,
-        model_patcher  = None,
-        tokenizer_name = None,
-        trust_remote_code = False,
+        model_name="Qwen/Qwen1.5-7B",
+        max_seq_length=4096,
+        dtype=None,
+        load_in_4bit=True,
+        token=None,
+        device_map="sequential",
+        rope_scaling=None,  # Qwen2 does not support RoPE scaling
+        fix_tokenizer=True,
+        model_patcher=None,
+        tokenizer_name=None,
+        trust_remote_code=False,
         **kwargs,
     ):
         return FastMistralModel.from_pretrained(
-            model_name     = model_name,
-            max_seq_length = max_seq_length,
-            dtype          = dtype,
-            load_in_4bit   = load_in_4bit,
-            token          = token,
-            device_map     = device_map,
-            rope_scaling   = rope_scaling,
-            fix_tokenizer  = fix_tokenizer,
-            model_patcher  = FastQwen2Model,
-            tokenizer_name = tokenizer_name,
-            trust_remote_code = trust_remote_code,
+            model_name=model_name,
+            max_seq_length=max_seq_length,
+            dtype=dtype,
+            load_in_4bit=load_in_4bit,
+            token=token,
+            device_map=device_map,
+            rope_scaling=rope_scaling,
+            fix_tokenizer=fix_tokenizer,
+            model_patcher=FastQwen2Model,
+            tokenizer_name=tokenizer_name,
+            trust_remote_code=trust_remote_code,
             **kwargs,
         )
+
     pass
+
+
 pass

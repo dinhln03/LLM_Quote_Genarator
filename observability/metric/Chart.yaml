@@ -1,0 +1,30 @@
+apiVersion: v2
+name: grafana-monitoring
+description: A Helm chart for monitoring setup with subcharts
+version: 0.1.0
+appVersion: "1.0"
+dependencies:
+  - name: prometheus
+    version: 0.1.0
+    repository: ""
+    condition: prometheus.enabled
+
+  - name: node-exporter
+    version: 0.1.0
+    repository: ""
+    condition: node-exporter.enabled
+
+  - name: cadvisor
+    version: 0.1.0
+    repository: ""
+    condition: cadvisor.enabled
+  
+  - name: grafana
+    version: 0.1.0
+    repository: ""
+    condition: grafana.enabled
+  
+  - name: alertmanager
+    version: 0.1.0
+    repository: ""
+    condition: alertmanager.enabled
