@@ -399,7 +399,7 @@ So far, we have deployed the model and the FastAPI app to GKE, monitored the per
 
 3. Access Jenkins at `http://<VM_IP_ADDR>:8081` and find password by running
    ```shell
-   ssh -i $ROOT_DIR/iac/ansible/.ssh/jenkins <username>@<VM_IP_ADDR>    # Example: ssh -i $ROOT_DIR/iac/ansible/.ssh/jenkins dinhln@35.240.163.5
+   ssh -i $ROOT_DIR/iac/ansible/.ssh/jenkins <username>@<VM_IP_ADDR>    # Example: ssh -i $ROOT_DIR/iac/ansible/.ssh/jenkins dinhln@35.240.163.52
    sudo docker exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
    ctrl + D  # to exit the ssh session
    ```

@@ -11,7 +11,11 @@ pipeline {
             steps {
                 script {
                     // Check if there are changes in the 'app' folder
-                    def changesInAppFolder = sh(script: "git diff --name-only HEAD~1..HEAD | grep '^app/'", returnStdout: true).trim()
+                    def changes = sh(script: "git diff --name-only HEAD~1..HEAD", returnStdout: true).trim()
+
+                    // Check if any changes are in the 'app' folder
+                    def changesInAppFolder = changes.split("\n").any { it.startsWith('app/') }
+                    
                     if (changesInAppFolder) {
                         currentBuild.description = "App folder changes detected"
                     } else {
