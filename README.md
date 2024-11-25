@@ -470,7 +470,8 @@ So far, we have deployed the model and the FastAPI app to GKE, monitored the per
    - Save the webhook
    ![alt text](images/webhook-1.png)
    ![alt text](images/webhook-2.png)
-12.Demo
+12.Demo 
+   
    
       
 
