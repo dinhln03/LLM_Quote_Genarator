@@ -471,7 +471,7 @@ So far, we have deployed the model and the FastAPI app to GKE, monitored the per
    ![alt text](images/webhook-1.png)
    ![alt text](images/webhook-2.png)
 12.Demo 
-   
+   ![alt text](images/webhook-3.gif)
    
       
 
