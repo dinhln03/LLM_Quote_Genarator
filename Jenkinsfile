@@ -12,10 +12,10 @@ pipeline {
                 script {
                     // Check if there are changes in the 'app' folder
                     def changes = sh(script: "git diff --name-only HEAD~1..HEAD", returnStdout: true).trim()
-
+                    echo "Changes: ${changes}"
                     // Check if any changes are in the 'app' folder
                     def changesInAppFolder = changes.split("\n").any { it.startsWith('app/') }
-                    
+
                     if (changesInAppFolder) {
                         currentBuild.description = "App folder changes detected"
                     } else {
@@ -28,8 +28,8 @@ pipeline {
         stage('Build') {
             when {
                 expression {
-                    // Run build only if on main branch or app folder changes are detected
-                    return currentBuild.description == "App folder changes detected" || env.GIT_BRANCH.startsWith('origin/main')
+                    // Run build only if on main branch anh app folder changes are detected
+                    return currentBuild.description == "App folder changes detected" && env.GIT_BRANCH.startsWith('origin/main')
                 }
             }
             steps {
