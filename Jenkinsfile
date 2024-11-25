@@ -10,6 +10,7 @@ pipeline {
         stage('Check for Changes') {
             steps {
                 script {
+                    echo "Current branch: ${env.GIT_BRANCH}"
                     // Fetch the latest commits
                     // Check if there are changes in the 'app' folder
                     def changes = sh(script: "git diff --name-only HEAD~1..HEAD", returnStdout: true).trim()

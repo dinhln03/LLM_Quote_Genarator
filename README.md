@@ -445,8 +445,32 @@ So far, we have deployed the model and the FastAPI app to GKE, monitored the per
 
 10. Create a new pipeline
    - Choose `New Item` -> `Multi Branch Pipeline` -> `OK`
+
       ![alt text](images/jenkins-7.png)
 
+   - Configure the pipeline
+
+      ![alt text](images/jenkins-8.png)
+
+      ![alt text](images/jenkins-9.png)
+   - Add Docker Hub credentials
+
+      ![alt text](images/jenkins-10.png)
+
+      ![alt text](images/jenkins-11.png)
+
+      ![alt text](images/jenkins-12.png)
+
+      ![alt text](images/jenkins-13.png)
+
+11. Finally, add new webhook to your Github Reposistory
+   - Go to your Github repository -> Settings -> Webhooks -> Add webhook
+   - Add the Jenkins URL and append `/github-webhook/` to it
+   - Choose `Push and Pull Request` and `Active` the webhook
+   - Save the webhook
+   ![alt text](images/webhook-1.png)
+   ![alt text](images/webhook-2.png)
+      
 
 
 
