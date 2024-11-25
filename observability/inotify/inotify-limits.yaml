@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: inotify-limits
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: inotify-limits
+  template:
+    metadata:
+      labels:
+        name: inotify-limits
+    spec:
+      hostPID: true
+      containers:
+        - name: sysctl
+          image: gcr.io/google-containers/busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              sysctl -w fs.inotify.max_user_instances=8192
+              sysctl -w fs.inotify.max_user_watches=524288
+              while true; do sleep 3600; done
+          securityContext:
+            privileged: true
+      restartPolicy: Always

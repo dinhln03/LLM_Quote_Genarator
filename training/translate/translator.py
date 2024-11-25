@@ -10,7 +10,7 @@ from loguru import logger
 
 
 class QuoteTranslator:
-    def __init__(self, model, log_file="../logs/quote_translated.log"):
+    def __init__(self, model, log_file="logs/quote_translated.log"):
         self.model = model
         self.safe = Constant.safe
         self.topic = Constant.topic
@@ -166,7 +166,7 @@ class QuoteTranslator:
         """Save the batch results to a JSON file."""
         logger.info(f"Saving batch {start_index}-->{start_index+num_threads-1}...")
         with open(
-            f"../data/translated_quote_batch_{start_index}_{start_index+num_threads-1}.json",
+            f"data/translated_quote_batch_{start_index}_{start_index+num_threads-1}.json",
             "w",
         ) as f:
             json.dump(results, f, indent=2)

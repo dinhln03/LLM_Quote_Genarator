@@ -41,7 +41,7 @@ This is an example of how you may give instructions on setting up your project. 
 - Dataset: [dinhlnd1610/Vietnamese_Quote_Dataset_100K](https://huggingface.co/datasets/dinhlnd1610/Vietnamese_Quote_Dataset_100K)
 - Model: [dinhlnd1610/gemma-2b-quote-generation-82000](https://huggingface.co/dinhlnd1610/gemma-2b-quote-generation-82000)
 
-### Setup
+### General Setup
 
 1. Clone the repository
    ```sh
@@ -51,17 +51,28 @@ This is an example of how you may give instructions on setting up your project. 
    ```sh
    cd LLM_Quote_Genarator
    ```
-3. - Run `export ROOT_DIR=$(pwd)` for easier nagivation
-   - Create a new `.env` file based on `.env.example` and populate the variables there
-      ```sh
-      set -a && source .env && set +a
-      ```
+3.  Run `export ROOT_DIR=$(pwd)` for easier nagivation
+
+
+
+### I. Data Generation
+
+1. Setup
+   - Install [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) for managing Python environments
+   - Install [gdown](https://github.com/wkentaro/gdown)
+2. ```sh
+   cd $ROOT_DIR/training/translate
+   ```
+3. Create new .env file based on .env.example at `$ROOT_DIR/training/translate` path and populate the variables there
+   ```sh
+   set -a && source .env && set +a
+   ```
 4. Download English quote dataset and install the required packages
    ```sh
    gdown https://drive.google.com/uc?id=11MmVMc0khvB94W0zqDyUHowEEG650BSX
    conda create -n training python=3.10 -y && conda activate training  && pip install -r requirements.txt
    ```
-5. Run the Script to generate Vietnamese quotes. Data will be saved in `data` folder and log will be saved in `log` folder
+5. Run the Script to generate Vietnamese quotes. Data will be saved in `data` folder and log will be saved in `logs` folder
    ```bash
    python run.py main \
      --data_path=$data_path \
@@ -191,20 +202,64 @@ This is an example of how you may give instructions on setting up your project. 
 
    - Rename the image to your Docker Hub username and push it to Docker Hub (remenber to login to Docker Hub first):s
    ```shell
-   docker tag quote-generator:lastest <DOCKER_HUB_USERNAME>/quote-generator:lastest
-   docker push <DOCKER_HUB_USERNAME>/quote-generator:lastest
+   docker tag quote-generator:lastest$DOCKER_USERNAME/quote-generator:lastest
+   docker push $DOCKER_USERNAME/quote-generator:lastest
    ```
 
    Cool! Now you have a FastAPI app running in a container. Let's "go to the moon" and deploy it to the cloud with K8s. 
 
-4. Place holder for creating GKE
+4. Creating GKE cluster using Terraform
+   - Login to GCP console and create new project
+      ![alt text](images/gke-1.gif)
+   - Input your project ID in in variable "project_id" in `terraform/variables.tf`
+
+      ![alt text](images/gke-2.png)
+      
+   - Login to GCP using gcloud CLI
+      ```shell
+      gcloud auth application-default login
+      ```
+   - Provision a new GKE cluster using Terraform
+      ```shell
+      cd $ROOT_DIR/iac/terraform
+      terraform init
+      terraform plan
+      terraform apply
+      ```
+      ![alt text](images/gke-3.gif)
+   - Connect to the GKE cluster
+      ```shell
+      gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
+      ```
+   That's it! You have a GKE cluster up and running. In case you want to delete the cluster, just run `terraform destroy`. 
 
 5. Deploy the FastAPI app to GKE (remember to change the image in the `quote_gen_chart/values.yaml` file to your Docker Hub username)
-   ```shell
-   yq e '.host = [env(HOST)]' -i values.yaml
-   helm upgrade --install quote-generator ./helm/quote_gen_chart --namespace quote-gen --create-namespace
-   ```
+   - Switch context to the GKE cluster
+      ```shell
+      kubectx gke_${PROJECT_ID}_${REGION}_${CLUSTER_NAME}
+      ```
+   - Install nginx-ingress controller
+      ```shell
+      cd $ROOT_DIR/helm/nginx-ingress
+      helm upgrade --install nginx-ingress . --namespace nginx-ingress --create-namespace
+      ```
+   - Get the external IP of the nginx-ingress controller
+      ```shell
+      export EXTERNAL_IP=$(kubectl get svc -n nginx-ingress | grep "LoadBalancer" | awk '{print $4}')
+      ```
+      ![alt text](images/gke-4.png)
+   - Create Host for the external IP and export it as env variable. Here, I use nip.io for dynamic DNS ( You can use your own domain or append new host to /etc/hosts that point to the external IP)
+      ```shell
+      export HOST=app.$EXTERNAL_IP.nip.io
+      ```
+   - Install quote-generator appplication
+      ```shell
+      cd $ROOT_DIR/helm/quote_gen_chart
+      yq e '.host = env(HOST)' -i values.yaml
+      helm upgrade --install quote-generator . --namespace quote-gen --create-namespace
+      ```
    - Now can can access the FastAPI swagger UI at `<HOST>/docs`
+   ![alt text](images/gke-5.png)
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -213,11 +268,10 @@ This is an example of how you may give instructions on setting up your project. 
 
 So far, we have deployed the model and the FastAPI app to GKE. Now, we need to monitor the performance of the model and the app. We will use Prometheus and Grafana for monitoring the model and the app, Jaeger for tracing the requests and Elastic Search and Kibana for collecting system logs. Let's cook !
 
-1. Setup
+1. Increase inotify watch limits to Kubernetes instances.
    ```shell
-   # Increase inotify watch limits to Kubernetes instances.
-   sudo sysctl fs.inotify.max_user_instances=8192
-   sudo sysctl fs.inotify.max_user_watches=524288
+   cd $ROOT_DIR/observability/inotify
+   kubectl apply -f inotify-limits.yaml
    ```
 
 2. Create a separate namespace for observability and switch to it
@@ -231,7 +285,6 @@ So far, we have deployed the model and the FastAPI app to GKE. Now, we need to m
    cd $ROOT_DIR/observability/jaeger
    yq e '.query.ingress.hosts = [env(HOST)]' -i values.yaml
    helm upgrade --install jaeger . --namespace observability 
-   kubectl port-forward svc/jaeger-query 16686:80
    ```
 
 4. Install ELK stack for collecting logs
@@ -260,6 +313,7 @@ So far, we have deployed the model and the FastAPI app to GKE. Now, we need to m
    - Jaeger: `<HOST>/tracing-jaeger`
    ![alt text](images/jaeger-1.png)
    ![alt text](images/jaeger-2.png)
+   ![alt text](images/gke-4.gif)
 
    - Kibana: 
       ```shell
@@ -289,6 +343,153 @@ So far, we have deployed the model and the FastAPI app to GKE. Now, we need to m
       ![alt text](images/graf-2.png)
       ![alt text](images/graf-3.png)
       ![alt text](images/graf-4.png)
+   
+   - Alertmanager: You will receive alerts in your Discord channel
+      ![alt text](images/dis-1.png)
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+### V. CI-CD Pipeline
+So far, we have deployed the model and the FastAPI app to GKE, monitored the performance of the model and the app. Now, we need to automate the deployment process using Jenkins. Let's do it !
+1. Setup
+   - Rebuild Jenskin image with docker and helm installed
+      ```shell
+      cd $ROOT_DIR/custom_images/jenkins
+      docker build -t $DOCKER_USERNAME/jenkins:lts -f Dockerfile .
+      ```
+   - Push the image to Docker Hub (remember to login to Docker Hub first)
+      ```shell
+      docker push $DOCKER_USERNAME/jenkins:lts
+      ```
+2. Build up a VM instance on GCP using Ansible
+   - Install pre-requisites
+      ```shell
+      cd $ROOT_DIR/iac/ansible/deploy_jenkins
+      pip install -r vm_requirements.txt
+      ```
+   - Create a Service Account on GCP and download the JSON key file. Then put the file in the `iac/ansible/secrets` folder
+      ![alt text](images/ans-1.png)
+   - Build up the VM instance
+      ```shell
+      ansible-playbook deploy_jenkins.yml --extra-vars "project=$PROJECT_ID service_account_file=$secret_file_path"
+      ```
+      For example: `ansible-playbook create_compute_instance.yaml --extra-vars "project=quote-generation-442617 service_account_file=../secrets/quote-generation-442617-f1139970a9ba.json"`
+
+      ![alt text](images/ans-2.png)
+
+      You have successfully created a VM instance on GCP. Now, let's install Jenkins on it.
+      ![alt text](images/ans-3.png)
+3. Install Jenkins on VM 
+   - Create a new ssh key pair
+      ```shell
+      mkdir $ROOT_DIR/iac/ansible/.ssh
+      ssh-keygen -f $ROOT_DIR/iac/ansible/.ssh/jenkins 
+      ```
+   - Cat the public key and add it to the VM instance
+      ```shell
+      cat $ROOT_DIR/iac/ansible/.ssh/jenkins.pub
+      ```
+   - Get your VM's external IP address and add it to the `iac/ansible/inventory` file
+   - Install Jenkins on the VM
+      ```shell
+      ansible-playbook -i ../inventory deploy_jenkins.yaml
+      ```
+      ![alt text](images/ans-4.png)
+
+3. Access Jenkins at `http://<VM_IP_ADDR>:8081` and find password by running
+   ```shell
+   ssh -i $ROOT_DIR/iac/ansible/.ssh/jenkins <username>@<VM_IP_ADDR>    # Example: ssh -i $ROOT_DIR/iac/ansible/.ssh/jenkins dinhln@35.240.163.5
+   sudo docker exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+   ctrl + D  # to exit the ssh session
+   ```
+   ![alt text](images/jenkins-1.png)
+4. Install the recommended plugins and create an admin user
+   ![alt text](images/jenkins-2.png)
+5. Choose `Skip and continue as admin` and `Save and finish`
+6. Choose `Start using Jenkins`
+7. We will be redirected to the Jenkins dashboard
+   ![alt text](images/jenkins-3.png)
+8. Choosing manage Jenkins -> Manage plugins -> Available -> Search for `Docker` and `Kubernetes` and install them
+   ![alt text](images/jenkins-4.png)
+
+9. Connect Jenkins to GKE cluster
+   - Choose `Manage Jenkins` -> `Cloud` -> `New Cloud` 
+      ![alt text](images/jenskin-5.png)
+   - Get cluster ip and put it in the `Kubernetes URL` field
+      ```shell
+      current_context=$(kubectl config current-context)
+      current_cluster=$(kubectl config view -o jsonpath="{.contexts[?(@.name=='$current_context')].context.cluster}")
+      kubectl config view -o jsonpath="{.clusters[?(@.name=='$current_cluster')].cluster.server}"
+      ```
+   - Get the server certificate and put it in the `Kubernetes server certificate key` field
+      ```shell
+      current_context=$(yq e '.current-context' ~/.kube/config)\
+      current_cluster=$(yq e ".contexts[] | select(.name == \"$current_context\") | .context.cluster" ~/.kube/config)\
+      yq e ".clusters[] | select(.name == \"$current_cluster\") | .cluster.\"certificate-authority-data\"" ~/.kube/config
+      ```
+   - Grants admin privileges to the "default" service account in that quote-gen namespace, and also grants admin privileges to anonymous users within the same namespace.
+      ```shell
+      kubectl create clusterrolebinding model-serving-admin-binding \
+      --clusterrole=admin \
+      --serviceaccount=model-serving:default \
+      --namespace=quote-gen
+
+      kubectl create clusterrolebinding anonymous-admin-binding \
+      --clusterrole=admin \
+      --user=system:anonymous \
+      --namespace=quote-gen
+      ```
+   - Test connection
+      ![alt text](images/jenkins-6.png)
+
+10. Create a new pipeline
+   - Choose `New Item` -> `Multi Branch Pipeline` -> `OK`
+      ![alt text](images/jenkins-7.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 <!-- MARKDOWN LINKS & IMAGES -->

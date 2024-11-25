@@ -3,8 +3,8 @@ from pathlib import Path
 
 
 def merge_file(
-    input_path_dir="../../data",
-    output_path_dir="../../merged_data/translated_quote.json",
+    input_path_dir="data",
+    output_path_dir="merged_data/translated_quote.json",
 ):
 
     result = []

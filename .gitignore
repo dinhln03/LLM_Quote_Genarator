@@ -126,6 +126,11 @@ celerybeat.pid
 # Environments
 training/translate/.env
 training/training_script/.env
+iac/ansible/secrets/
+iac/terraform/*
+!iac/terraform/main.tf
+!iac/terraform/variables.tf
+iac/ansible/.ssh
 .env
 .venv
 env/
