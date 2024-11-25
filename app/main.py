@@ -28,6 +28,7 @@ security = HTTPBasic()
 
 @app.get("/metadata")
 def get_metadata():
+    print("metadata")
     return {"my_metadata": "Quote generator version 1"}
 
 

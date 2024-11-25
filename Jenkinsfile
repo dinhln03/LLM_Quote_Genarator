@@ -11,8 +11,6 @@ pipeline {
             steps {
                 script {
                     // Fetch the latest commits
-                    sh 'git fetch --all'
-
                     // Check if there are changes in the 'app' folder
                     def changes = sh(script: "git diff --name-only HEAD~1..HEAD", returnStdout: true).trim()
                     echo "Changes: ${changes}"
