@@ -5,7 +5,7 @@ ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 COPY ./requirements.txt .
-RUN /opt/venv/bin/pip install -r ./requirements.txt --no-cache-dir
+RUN pip install -r ./requirements.txt --no-cache-dir
 
 FROM python:3.9-alpine AS runtime-image
 
@@ -16,8 +16,8 @@ RUN apk upgrade --no-cache && \
     apk add --no-cache libgcc libstdc++ ncurses-libs gcompat 
 WORKDIR /app/ 
 
-COPY ./app /app
-COPY .env /app/.env
+COPY ./app .
+COPY .env ./.env
 
 # Set environment variables
 ENV PATH="/opt/venv/bin:$PATH"
