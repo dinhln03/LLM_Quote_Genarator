@@ -92,7 +92,7 @@ pipeline {
             steps {
                 script {
                     container('helm') {
-                        sh("helm upgrade --install quote-generator ./helm/quote_gen_chart --namespace quote-gen ")
+                        sh("helm upgrade --install quote-generator ./helm/quote_gen_chart --namespace quote-gen")
                     }
                 }
             }

@@ -187,7 +187,7 @@ This is an example of how you may give instructions on setting up your project. 
      ![alt text](images/runpod_2.png)
    - Config path to your model and other configurations properly
      ![alt text](images/runpod_3.png)
-   - Follow this [tutorial](https://docs.runpod.io/tutorials/serverless/gpu/run-gemma-7b#interact-with-your-model) to get $RUNPOD_ENDPOINT_ID, $RUNPOD_API_KEY and $HF_MODEL_NAME and populate them into .env file
+   - Follow this [tutorial](https://docs.runpod.io/tutorials/serverless/gpu/run-gemma-7b#interact-with-your-model) to get $RUNPOD_ENDPOINT_ID, $RUNPOD_API_KEY and $HF_MODEL_NAME and populate them into app/constants.py file
 
 3. - Containerize the FastAPI app using Docker:
    ```shell

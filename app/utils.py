@@ -1,19 +1,20 @@
 import asyncio
-import os
 import time
 
 from openai import OpenAI
 
+from constants import config
+
 try:
-    endpoint_id = os.environ["RUNPOD_ENDPOINT_ID"]
-    api_key = os.environ["RUNPOD_API_KEY"]
-    hf_model_name = os.environ["HF_MODEL_NAME"]
+    endpoint_id = config.RUNPOD_ENDPOINT_ID
+    api_key = config.RUNPOD_API_KEY
+    hf_model_name = config.HF_MODEL_NAME
 except KeyError as e:
-    raise RuntimeError(f"Missing required environment variable: {e}")
+    raise RuntimeError(f"Missing required variable: {e}")
 
 
 async def get_conversation(text):
-    
+
     client = OpenAI(
         base_url=f"https://api.runpod.ai/v2/{endpoint_id}/openai/v1",
         api_key=api_key,
