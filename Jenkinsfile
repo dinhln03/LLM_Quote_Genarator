@@ -47,9 +47,15 @@ pipeline {
                     currentBuild.description == 'RunTestBuildDeploy' || currentBuild.description == 'RunTestOnly'
                 }
             }
+            agent {
+                docker {
+                    image 'python:3.11' 
+                }
+            }
             steps {
-                echo 'Running tests...'
-                // Add your test steps here
+                echo 'Testing the application...'
+                sh 'pip install -r requirements.txt && pytest'
+                //To do: Add more tests here 
             }
         }
 
