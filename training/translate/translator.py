@@ -4,7 +4,7 @@ import re
 import time
 
 import google.generativeai as genai
-from constant import Constant
+from training.translate.constants import Constant
 from google.api_core.exceptions import ResourceExhausted
 from loguru import logger
 

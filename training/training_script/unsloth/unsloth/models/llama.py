@@ -17,11 +17,14 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 from torch.nn.functional import scaled_dot_product_attention
-from transformers.modeling_attn_mask_utils import \
-    _prepare_4d_causal_attention_mask_for_sdpa
-from transformers.models.llama.modeling_llama import (BaseModelOutputWithPast,
-                                                      CausalLMOutputWithPast,
-                                                      logger)
+from transformers.modeling_attn_mask_utils import (
+    _prepare_4d_causal_attention_mask_for_sdpa,
+)
+from transformers.models.llama.modeling_llama import (
+    BaseModelOutputWithPast,
+    CausalLMOutputWithPast,
+    logger,
+)
 
 from ..kernels import *
 from ..tokenizer_utils import *
@@ -32,15 +35,19 @@ if HAS_FLASH_ATTENTION:
     from flash_attn import flash_attn_func
 
 # Final patching code
-from transformers.models.llama.modeling_llama import (LlamaAttention,
-                                                      LlamaDecoderLayer,
-                                                      LlamaForCausalLM,
-                                                      LlamaModel)
+from transformers.models.llama.modeling_llama import (
+    LlamaAttention,
+    LlamaDecoderLayer,
+    LlamaForCausalLM,
+    LlamaModel,
+)
 
 # For Pytorch 2.1.1
 try:
-    from transformers.models.llama.modeling_llama import (LlamaFlashAttention2,
-                                                          LlamaSdpaAttention)
+    from transformers.models.llama.modeling_llama import (
+        LlamaFlashAttention2,
+        LlamaSdpaAttention,
+    )
 except:
     LlamaSdpaAttention = LlamaAttention
     LlamaFlashAttention2 = LlamaAttention
@@ -56,8 +63,12 @@ from bitsandbytes.nn import Linear4bit as Bnb_Linear4bit
 from peft import LoraConfig, PeftModelForCausalLM, TaskType
 from peft import get_peft_model as _get_peft_model
 from peft.tuners.lora import Linear4bit as Peft_Linear4bit
-from transformers import (AutoConfig, AutoModelForCausalLM, AutoTokenizer,
-                          BitsAndBytesConfig)
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 from transformers import set_seed as transformers_set_seed
 
 from ..save import patch_saving_functions

@@ -12,23 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from transformers.modeling_attn_mask_utils import \
-    _prepare_4d_causal_attention_mask_for_sdpa
-from transformers.models.gemma.modeling_gemma import (GemmaAttention,
-                                                      GemmaDecoderLayer,
-                                                      GemmaForCausalLM,
-                                                      GemmaModel,
-                                                      GemmaRotaryEmbedding,
-                                                      apply_rotary_pos_emb,
-                                                      repeat_kv)
+from transformers.modeling_attn_mask_utils import (
+    _prepare_4d_causal_attention_mask_for_sdpa,
+)
+from transformers.models.gemma.modeling_gemma import (
+    GemmaAttention,
+    GemmaDecoderLayer,
+    GemmaForCausalLM,
+    GemmaModel,
+    GemmaRotaryEmbedding,
+    apply_rotary_pos_emb,
+    repeat_kv,
+)
 
 from ._utils import __version__
 from .llama import *
 
 # For Pytorch 2.1.1
 try:
-    from transformers.models.gemma.modeling_gemma import (GemmaFlashAttention2,
-                                                          GemmaSdpaAttention)
+    from transformers.models.gemma.modeling_gemma import (
+        GemmaFlashAttention2,
+        GemmaSdpaAttention,
+    )
 except:
     GemmaSdpaAttention = GemmaAttention
     GemmaFlashAttention2 = GemmaAttention

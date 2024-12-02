@@ -74,7 +74,7 @@ This is an example of how you may give instructions on setting up your project. 
    ```
 5. Run the Script to generate Vietnamese quotes. Data will be saved in `data` folder and log will be saved in `logs` folder
    ```bash
-   python run.py main \
+   python main.py main \
      --data_path=$data_path \
      --sample_length=$sample_length \
      --start_batch=$start_batch \

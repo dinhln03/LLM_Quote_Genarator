@@ -14,10 +14,12 @@
 
 import os
 
-from transformers.models.qwen2.modeling_qwen2 import (Qwen2Attention,
-                                                      Qwen2DecoderLayer,
-                                                      Qwen2ForCausalLM,
-                                                      Qwen2Model)
+from transformers.models.qwen2.modeling_qwen2 import (
+    Qwen2Attention,
+    Qwen2DecoderLayer,
+    Qwen2ForCausalLM,
+    Qwen2Model,
+)
 
 from ._utils import __version__
 from .llama import *
@@ -25,8 +27,10 @@ from .mistral import FastMistralModel
 
 # For Pytorch 2.1.1
 try:
-    from transformers.models.qwen2.modeling_qwen2 import (Qwen2FlashAttention2,
-                                                          Qwen2SdpaAttention)
+    from transformers.models.qwen2.modeling_qwen2 import (
+        Qwen2FlashAttention2,
+        Qwen2SdpaAttention,
+    )
 except:
     Qwen2SdpaAttention = Qwen2Attention
     Qwen2FlashAttention2 = Qwen2Attention

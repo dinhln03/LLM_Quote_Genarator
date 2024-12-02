@@ -13,9 +13,11 @@
 # limitations under the License.
 
 try:
-    from transformers.utils.notebook import (IntervalStrategy,
-                                             NotebookProgressCallback,
-                                             NotebookTrainingTracker)
+    from transformers.utils.notebook import (
+        IntervalStrategy,
+        NotebookProgressCallback,
+        NotebookTrainingTracker,
+    )
 
     HAS_NOTEBOOK = True
 except:

@@ -90,8 +90,9 @@ def train(
     train_batch_size: int = 4,
     max_seq_length: int = 8192,
 ):
-    dataset_name = "dinhlnd1610/Vietnamese_Quote_Dataset_100K"
-    output_dir = "../unsloth-lora-checkpoints"
+    DATASET_NAME = "dinhlnd1610/Vietnamese_Quote_Dataset_100K"
+    OUTPUT_DIR = "../unsloth-lora-checkpoints"
+    OUTPUT_TRAINER_DIR = "../trainer_model"
 
     # Load model and tokenizer
     tokenizer, model = load_model(model_name_or_path, max_seq_length)
@@ -99,7 +100,7 @@ def train(
     # Load dataset
     train_dataset, eval_dataset = load_dataset(
         tokenizer=tokenizer,
-        dataset_name_or_path=dataset_name,
+        dataset_name_or_path=DATASET_NAME,
         max_seq_length=max_seq_length,
     )
     collator = DataCollatorForCompletionOnlyLM(
@@ -112,7 +113,7 @@ def train(
 
     # Training Arguments
     training_args = TrainingArguments(
-        output_dir=output_dir,
+        output_dir=OUTPUT_DIR,
         per_device_train_batch_size=train_batch_size,
         per_device_eval_batch_size=train_batch_size,
         bf16=True,
@@ -147,9 +148,8 @@ def train(
     if trainer.is_fsdp_enabled:
         trainer.accelerator.state.fsdp_plugin.set_state_dict_type("FULL_STATE_DICT")
 
-    trainer.save_model("../trainer_model")
+    trainer.save_model(OUTPUT_TRAINER_DIR)
 
 
 if __name__ == "__main__":
-    # fire.Fire(train)
     fire.Fire(train)

@@ -285,9 +285,11 @@ def get_statistics():
     try:
         import psutil
         from huggingface_hub import hf_hub_download
-        from huggingface_hub.utils import (are_progress_bars_disabled,
-                                           disable_progress_bars,
-                                           enable_progress_bars)
+        from huggingface_hub.utils import (
+            are_progress_bars_disabled,
+            disable_progress_bars,
+            enable_progress_bars,
+        )
 
         n_cpus = psutil.cpu_count(logical=False)
 
@@ -472,8 +474,10 @@ try:
     import re
     from inspect import getsource
 
-    from transformers.utils.quantization_config import (BitsAndBytesConfig,
-                                                        QuantizationMethod)
+    from transformers.utils.quantization_config import (
+        BitsAndBytesConfig,
+        QuantizationMethod,
+    )
 
     BitsAndBytesConfig__init__ = getsource(BitsAndBytesConfig.__init__)
     BitsAndBytesConfig__init__ = re.sub(

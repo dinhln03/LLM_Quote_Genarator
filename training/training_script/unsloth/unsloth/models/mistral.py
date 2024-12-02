@@ -14,10 +14,12 @@
 
 import os
 
-from transformers.models.mistral.modeling_mistral import (MistralAttention,
-                                                          MistralDecoderLayer,
-                                                          MistralForCausalLM,
-                                                          MistralModel)
+from transformers.models.mistral.modeling_mistral import (
+    MistralAttention,
+    MistralDecoderLayer,
+    MistralForCausalLM,
+    MistralModel,
+)
 
 from ._utils import __version__
 from .llama import *
@@ -25,7 +27,9 @@ from .llama import *
 # For Pytorch 2.1.1
 try:
     from transformers.models.mistral.modeling_mistral import (
-        MistralFlashAttention2, MistralSdpaAttention)
+        MistralFlashAttention2,
+        MistralSdpaAttention,
+    )
 except:
     MistralSdpaAttention = MistralAttention
     MistralFlashAttention2 = MistralAttention

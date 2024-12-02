@@ -14,8 +14,7 @@
 
 import torch
 
-from .utils import (QUANT_STATE, fast_dequantize, get_lora_parameters,
-                    matmul_lora)
+from .utils import QUANT_STATE, fast_dequantize, get_lora_parameters, matmul_lora
 
 
 class LoRA_MLP(torch.autograd.Function):
