@@ -9,8 +9,3 @@ variable "region" {
   description = "The region the cluster in"
   default     = "asia-southeast1-a"
 }
-
-# variable "bucket" {
-#   description = "GCS bucket for MLE course"
-#   default     = "mle-course"
-# }
