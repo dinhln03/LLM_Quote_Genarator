@@ -83,7 +83,7 @@ This is an example of how you may give instructions on setting up your project. 
    ```
    ```bash
    # Example
-   python run.py main --data_path=./data.csv --sample_length=20000 --start_batch=0 --end_batch=4000 --num_thread=5
+   python main.py main --data_path=./data.csv --sample_length=20000 --start_batch=0 --end_batch=4000 --num_thread=5
    ```
    | Parameter | Description |
    |-----------|-------------|
