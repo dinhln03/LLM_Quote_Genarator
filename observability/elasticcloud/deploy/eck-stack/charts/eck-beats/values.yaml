@@ -1,0 +1,174 @@
+---
+# Default values for eck-beats.
+# This is a YAML-formatted file.
+
+# Overridable names of the Beats resource.
+# By default, this is the Release name set for the chart,
+# followed by 'eck-beats'.
+#
+# nameOverride will override the name of the Chart with the name set here,
+# so nameOverride: quickstart, would convert to '{{ Release.name }}-quickstart'
+#
+# nameOverride: "quickstart"
+#
+# fullnameOverride will override both the release name, and the chart name,
+# and will name the Beats resource exactly as specified.
+#
+# fullnameOverride: "quickstart"
+
+# Version of Elastic Beats.
+#
+name : filebeat
+version: 8.16.0-SNAPSHOT
+
+# Labels that will be applied to Elastic Beats.
+#
+labels: {}
+
+# Annotations that will be applied to Elastic Beats.
+#
+annotations: {}
+
+spec:
+  # Type of Elastic Beats. Standard types of Beat are [filebeat,metricbeat,heartbeat,auditbeat,packetbeat,journalbeat].
+  # ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-deploy-elastic-beat
+  #
+  # Note: This is required to be set, or the release install will fail.
+  #
+  type: filebeat
+
+  # Referenced resources are below and depending on the setup, at least elasticsearchRef is required for a functional Beat.
+  # ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-connect-es
+  #
+  # Reference to ECK-managed Kibana instance.
+  #
+  # kibanaRef:
+  #   name: quickstart
+    # Optional namespace reference to Kibana instance.
+    # If not specified, then the namespace of the Beats instance
+    # will be assumed.
+    #
+    # namespace: default
+
+  # Reference to ECK-managed Elasticsearch instance.
+  # *Note* If Beat's output is intended to go to Elasticsearch and not something like Logstash,
+  # this elasticsearchRef must be updated to the name of the Elasticsearch instance.
+  #
+  elasticsearchRef: 
+    name: elasticsearch
+    # name: elasticsearch
+    # Optional namespace reference to Elasticsearch instance.
+    # If not specified, then the namespace of the Beats instance
+    # will be assumed.
+    #
+    # namespace: default
+
+  # Daemonset, or Deployment specification for the type of Beat specified.
+  # At least one is required of [daemonSet, deployment].
+  # No default is currently set, refer to https://github.com/elastic/cloud-on-k8s/issues/7429.
+  # ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-chose-the-deployment-model
+  #
+  # deployment:
+  #   podTemplate:
+  #     spec:
+  #       containers:
+  #       - name: agent
+  #         securityContext:
+  #           runAsUser: 0
+  daemonSet:
+    podTemplate:
+      spec:
+        serviceAccountName: filebeat
+        automountServiceAccountToken: true
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true # Allows to provide richer host metadata
+        containers:
+        - name: filebeat
+          securityContext:
+            runAsUser: 0
+            # If using Red Hat OpenShift uncomment this:
+            #privileged: true
+          volumeMounts:
+          - name: varlogcontainers
+            mountPath: /var/log/containers
+          - name: varlogpods
+            mountPath: /var/log/pods
+          - name: varlibdockercontainers
+            mountPath: /var/lib/docker/containers
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+        volumes:
+        - name: varlogcontainers
+          hostPath:
+            path: /var/log/containers
+        - name: varlogpods
+          hostPath:
+            path: /var/log/pods
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+
+  # Configuration of Beat, which is dependent on the `type` of Beat specified.
+  # ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-deploy-elastic-beat
+  #
+  config:
+    filebeat.autodiscover.providers:
+    - node: ${NODE_NAME}
+      type: kubernetes
+      hints.default_config.enabled: "false"
+      templates:
+      - condition.equals.kubernetes.namespace: quote-gen
+        config:
+        - paths: ["/var/log/containers/*${data.kubernetes.container.id}.log"]
+          type: container
+      - condition.equals.kubernetes.labels.log-label: "true"
+        config:
+        - paths: ["/var/log/containers/*${data.kubernetes.container.id}.log"]
+          type: container
+    processors:
+    - add_cloud_metadata: {}
+    - add_host_metadata: {}
+
+# ServiceAccount to be used by Elastic Beats. Some Beats features (such as autodiscover or Kubernetes module metricsets)
+# require that Beat Pods interact with Kubernetes APIs. This functionality requires specific permissions
+# ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-role-based-access-control-for-beats
+#
+serviceAccount: 
+  name: filebeat
+  namespace: observability 
+
+# ClusterRoleBinding to be used by Elastic Beats. Similar to ServiceAccount, this is required in some scenarios.
+# ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-role-based-access-control-for-beats
+#
+clusterRoleBinding: 
+  name: filebeat
+  subjects:
+  - kind: ServiceAccount
+    name: filebeat
+    namespace: observability 
+  roleRef:
+    kind: ClusterRole
+    name: filebeat
+    apiGroup: rbac.authorization.k8s.io
+
+# ClusterRole to be used by Elastic Beats. Similar to ServiceAccount, this is required in some scenarios.
+# ref: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-beat-configuration.html#k8s-beat-role-based-access-control-for-beats
+#
+clusterRole: 
+  name: filebeat
+  rules:
+  - apiGroups: [""]
+    resources:
+    - events
+    - pods
+    - namespaces
+    - nodes
+    verbs:
+    - get
+    - watch
+    - list
+

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cadvisor
+  labels:
+    app: cadvisor
+spec:
+  selector:
+    matchLabels:
+      app: cadvisor
+  template:
+    metadata:
+      labels:
+        app: cadvisor
+    spec:
+      containers:
+        - name: cadvisor
+          image: {{ .Values.cadvisor.image }}
+          ports:
+            - containerPort: {{ .Values.cadvisor.containerPort }}  # Expose the container port
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true
+            - name: varrun
+              mountPath: /var/run
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: dockersock
+              mountPath: /var/lib/docker
+              readOnly: true
+      volumes:
+        - name: rootfs
+          hostPath:
+            path: /
+        - name: varrun
+          hostPath:
+            path: /var/run
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: dockersock
+          hostPath:
+            path: /var/lib/docker
+      restartPolicy: Always
+      nodeSelector:
+        kubernetes.io/os: linux  # Optional: restrict to Linux nodes

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: {{ .Values.grafana.image }}
+        ports:
+        - containerPort: {{ .Values.grafana.containerPort }}
+        env:
+          - name: GF_SECURITY_ADMIN_USER
+            value: "admin"
+          - name: GF_SECURITY_ADMIN_PASSWORD
+            value: "admin"
+          - name: JAEGER_AGENT_PORT
+            value: ""
+          - name: JAEGER_AGENT_HOST
+            value: ""
+        volumeMounts:
+          - name: grafana-dashboard-config
+            mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
+            subPath: dashboards.yaml
+            readOnly: true
+          - name: grafana-datasource-config
+            mountPath: /etc/grafana/provisioning/datasources/datasource.yaml
+            subPath: datasources.yaml
+            readOnly: true
+          - name: grafana-dashboard
+            mountPath: /opt/grafana/dashboards
+          - name: grafana-data
+            mountPath: /var/lib/grafana
+            
+      volumes:
+        - name: grafana-dashboard-config
+          configMap:
+            name: grafana-config
+            items:
+              - key: dashboards.yaml
+                path: dashboards.yaml
+          
+        - name: grafana-datasource-config
+          configMap:
+            name: grafana-config
+            items:
+              - key: datasources.yaml
+                path: datasources.yaml
+
+        - name: grafana-dashboard
+          configMap:
+            name: grafana-dashboard
+
+        - name: grafana-data
+          emptyDir: {}

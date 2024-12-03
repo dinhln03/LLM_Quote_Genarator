@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - /etc/prometheus/alert-rules.yml
+    
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - "alertmanager.observability.svc.cluster.local:9093"
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        scrape_interval: 10s
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'node-exporter'
+        scrape_interval: 5s
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - observability  # replace with the namespace where node-exporter is deployed
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: node-exporter
+          - source_labels: [__meta_kubernetes_pod_host_ip]
+            target_label: instance
+          - source_labels: [__address__]
+            target_label: __address__
+            regex: (.+):\d+
+            replacement: ${1}:9100 
+
+      - job_name: 'cadvisor'
+        scrape_interval: 5s
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - observability  # replace with the namespace where node-exporter is deployed
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: cadvisor
+          - source_labels: [__meta_kubernetes_pod_host_ip]
+            target_label: instance
+          - source_labels: [__address__]
+            target_label: __address__
+            regex: (.+):\d+
+            replacement: ${1}:8080
+
+  alert-rules.yml: |
+    groups:
+      - name: System alerts
+        rules:
+          - alert: NodeOutOfMemory
+            expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 40
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: Node out of memory
+              description: Node memory is only available {{ "{{" }} humanize $value {{ "}}" }}%
+
+      - name: Containers
+        rules:
+          - alert: OCRHighMemory
+            expr: sum(rate(container_cpu_usage_seconds_total{name="demo-metrics"}[5m])) * 100 > 100
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: OCR high CPU usage
+              description: OCR CPU consumption is at {{ "{{" }} humanize $value {{ "}}" }}%
+
+#Ref: https://chatgpt.com/share/6725e975-3f2c-8002-ba7b-44513f1e9669

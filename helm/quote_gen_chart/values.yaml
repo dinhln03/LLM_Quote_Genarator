@@ -1,0 +1,6 @@
+image:
+  repository: dinhln03/quote-generator
+  tag: "latest"
+  pullPolicy: Always
+host: app.34.143.253.22.nip.io
+namespace: quote-gen

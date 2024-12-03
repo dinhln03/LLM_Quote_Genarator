@@ -1,0 +1,54 @@
+suite: test beats
+templates:
+  - charts/eck-beats/templates/beats.yaml
+tests:
+  - it: should render specified beat properly
+    set:
+      eck-beats:
+        enabled: true
+        spec:
+          type: "metricbeat"
+          deployment: {}
+    release:
+      name: quickstart
+    asserts:
+      - isKind:
+          of: Beat
+      - equal:
+          path: metadata.name
+          value: quickstart-eck-beats
+      - equal:
+          path: spec.version
+          value: 8.16.0-SNAPSHOT
+  - it: should render custom metricbeat example properly
+    values:
+      - ../../examples/beats/metricbeat_hosts.yaml
+    release:
+      name: quickstart
+    asserts:
+      - isKind:
+          of: Beat
+      - equal:
+          path: metadata.name
+          value: quickstart-eck-beats
+      - equal:
+          path: spec.version
+          value: 8.16.0-SNAPSHOT
+      - equal:
+          path: spec.kibanaRef.name
+          value: quickstart
+      - equal:
+          path: spec.elasticsearchRef.name
+          value: quickstart
+      - equal:
+          path: spec.type
+          value: metricbeat
+      - equal:
+          path: spec.daemonSet.podTemplate.spec.securityContext.runAsUser
+          value: 0
+      - equal:
+          path: spec.daemonSet.podTemplate.spec.serviceAccountName
+          value: metricbeat
+      - equal:
+          path: spec.daemonSet.podTemplate.spec.hostNetwork
+          value: true

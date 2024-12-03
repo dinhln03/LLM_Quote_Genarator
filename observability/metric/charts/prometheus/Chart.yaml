@@ -1,0 +1,5 @@
+apiVersion: v2
+name: prometheus
+description: Helm subchart for Prometheus
+version: 0.1.0
+appVersion: "2.38.0"

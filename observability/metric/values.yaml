@@ -1,0 +1,15 @@
+# Enable or disable subcharts
+prometheus:
+  enabled: true
+
+node-exporter:
+  enabled: true
+
+cadvisor:
+  enabled: true
+
+grafana:
+  enabled: true
+
+alertmanager:
+  enabled: true

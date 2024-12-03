@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    meta.helm.sh/release-name: elk
+    meta.helm.sh/release-namespace: observability
+  creationTimestamp: "2024-11-18T17:03:53Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: elk
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: eck-kibana
+    helm.sh/chart: eck-kibana-0.13.0-SNAPSHOT
+  name: elk-eck-kibana
+  namespace: observability
+  resourceVersion: "1257500"
+  uid: d618d034-a347-44c9-92e2-208d252ea22e
+spec:
+  rules:
+  - host: app.192.168.49.2.nip.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: elk-eck-kibana-kb-http
+            port:
+              number: 5601
+        path: /kibana
+        pathType: Prefix
+status:
+  loadBalancer:
+    ingress:
+    - ip: 192.168.49.2

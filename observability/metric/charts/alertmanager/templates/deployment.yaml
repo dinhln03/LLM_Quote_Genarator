@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+      - name: alertmanager
+        image: {{ .Values.alertmanager.image }}
+        ports:
+        - containerPort: {{ .Values.alertmanager.containerPort }}
+        volumeMounts:
+          - name: alertmanager-config
+            mountPath: /alertmanager/
+          - name: alertmanager-data
+            mountPath: /alertmanager/data
+        args:
+          - '--config.file=/alertmanager/config.yml'
+          - '--storage.path=/alertmanager/data'
+          - '--log.level=debug'
+      volumes:
+        - name: alertmanager-config
+          configMap:
+            name: alertmanager-config
+          items:
+          - key: "config.yml"
+            path: "config.yml"
+        - name: alertmanager-data
+          emptyDir: {}
