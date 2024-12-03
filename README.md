@@ -37,7 +37,7 @@ This project aims to generate synthetic data for translating English quotes into
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project. If you don't want to fine-tune the model, you can skip the <a href="#dg">data generation section</a> and <a href="#training">training section</a> and move ahead to the <a href="#deployment">deployment section</a>. Checkout my data and model on the Huggingface hub as prequisites for the deployment phase.:
+If you don't want to fine-tune the model, you can skip the <a href="#dg">data generation section</a> and <a href="#training">training section</a> and move ahead to the <a href="#deployment">deployment section</a>. Checkout my data and model on the Huggingface hub as prequisites for the deployment phase.:
 - Dataset: [dinhlnd1610/Vietnamese_Quote_Dataset_100K](https://huggingface.co/datasets/dinhlnd1610/Vietnamese_Quote_Dataset_100K)
 - Model: [dinhlnd1610/gemma-2b-quote-generation-82000](https://huggingface.co/dinhlnd1610/gemma-2b-quote-generation-82000)
 
